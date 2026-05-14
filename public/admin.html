@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Admin - Token Send</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{
+  font-family:'Inter',sans-serif;
+  background:#0a0a0f;
+  color:white;
+  -webkit-tap-highlight-color: transparent;
+}
+h1,h2,h3{font-family:'Orbitron',sans-serif}
+.glass{
+  background:rgba(15,15,25,0.7);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(239,68,68,0.25);
+}
+input { font-size: 16px; }
+.badge-pending{background:#f59e0b;color:#000}
+.badge-confirmed{background:#22c55e}
+.badge-blocked{background:#ef4444}
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #22c55e;
+  color: white;
+  padding: 14px 24px;
+  border-radius: 16px;
+  font-weight: 600;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 50;
+  max-width: 90%;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+</style>
+</head>
+<body class="min-h-screen pb-20">
+
+<div id="toast" class="toast"></div>
+
+<div id="adminLogin" class="flex items-center justify-center min-h-screen p-4">
+  <div class="glass p-6 rounded-3xl w-full max-w-sm">
+    <h1 class="text-3xl mb-4 text-red-500 text-center">ADMIN</h1>
+    <div class="relative mb-3">
+      <input id="adminPass" type="password" placeholder="Mot de passe" class="w-full p-4 bg-gray-900/70 rounded-2xl border-gray-700 outline-none focus:border-red-500 pr-12">
+      <i data-lucide="eye" id="toggleAdminPass" class="absolute right-3 top-4 cursor-pointer text-gray-400"></i>
+    </div>
+    <button onclick="adminLogin()" class="w-full bg-red-600 p-4 rounded-2xl font-bold active:scale-95">Connexion</button>
+  </div>
+</div>
+
+<div id="adminPanel" class="hidden max-w-6xl mx-auto">
+
+  <header class="sticky top-0 z-10 glass border-b border-gray-800 p-4 flex justify-between items-center">
+    <h2 class="text-xl font-bold text-red-500">Panel Admin</h2>
+    <button onclick="logout()" class="text-gray-400 active:text-red-400">
+      <i data-lucide="log-out" class="w-6 h-6"></i>
+    </button>
+  </header>
+
+  <main class="p-4">
+
+    <!-- Users -->
+    <div id="users" class="adminTab space-y-4">
+      <div class="flex gap-3">
+        <button onclick="exportPDF()" class="flex-1 bg-blue-600 p-3 rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95">
+          <i data-lucide="file-down" class="w-5 h-5"></i> PDF
+        </button>
+        <button onclick="loadUsers()" class="flex-1 bg-gray-700 p-3 rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i> Refresh
+        </button>
+      </div>
+      <div id="usersList" class="space-y-3"></div>
+    </div>
+
+    <!-- Échanges -->
+    <div id="exchanges" class="adminTab hidden space-y-4">
+      <div class="flex gap-3 mb-3">
+        <button onclick="loadExchanges()" class="flex-1 bg-gray-700 p-3 rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i> Refresh
+        </button>
+      </div>
+      <div id="exchangesList" class="space-y-3"></div>
+    </div>
+
+    <!-- Blog -->
+    <div id="dashboard" class="adminTab hidden space-y-4">
+      <div class="glass p-5 rounded-3xl">
+        <h3 class="text-xl mb-4 flex items-center gap-2"><i data-lucide="newspaper" class="text-red-400"></i> Ajouter un blog</h3>
+        <input id="blogTitle" placeholder="Titre" class="w-full p-4 bg-gray-900/70 rounded-2xl mb-3 border-gray-700 outline-none focus:border-red-500">
+        <textarea id="blogDesc" placeholder="Description" class="w-full p-4 bg-gray-900/70 rounded-2xl mb-3 border-gray-700 outline-none focus:border-red-500" rows="3"></textarea>
+        <input id="blogUrl" placeholder="URL" class="w-full p-4 bg-gray-900/70 rounded-2xl mb-4 border-gray-700 outline-none focus:border-red-500">
+        <button onclick="addBlog()" class="w-full bg-red-600 p-4 rounded-2xl font-bold active:scale-95">Publier</button>
+      </div>
+    </div>
+
+    <!-- Paramètres -->
+    <div id="settings" class="adminTab hidden space-y-4">
+      <div class="glass p-5 rounded-3xl">
+        <h3 class="text-xl mb-4 flex items-center gap-2"><i data-lucide="image" class="text-blue-400"></i> Logos & Liens</h3>
+        <input id="siteLogo" placeholder="URL Logo Site" class="w-full p-4 bg-gray-900/70 rounded-2xl mb-3 border-gray-700">
+        <input id="ffLogo" placeholder="URL Logo Free Fire" class="w-full p-4 bg-gray-900/70 rounded-2xl mb-3 border-gray-700">
+        <input id="pubgLogo" placeholder="URL Logo PUBG" class="w-full p-4 bg-gray-900/70 rounded-2xl mb-3 border-gray-700">
+        <input id="subLink" placeholder="Lien Abonnement" class="w-full p-4 bg-gray-900/70 rounded-2xl mb-4 border-gray-700">
+        <button onclick="saveSettings()" class="w-full bg-blue-600 p-4 rounded-2xl font-bold active:scale-95">Sauvegarder</button>
+      </div>
+
+      <div class="glass p-5 rounded-3xl">
+        <h3 class="text-xl mb-4 flex items-center gap-2"><i data-lucide="key" class="text-yellow-400"></i> Mot de passe admin</h3>
+        <div class="relative mb-3">
+          <input id="newPass" type="password" placeholder="Nouveau mot de passe" class="w-full p-4 bg-gray-900/70 rounded-2xl pr-12 border-gray-700">
+          <i data-lucide="eye" id="toggleNewPass" class="absolute right-3 top-4 cursor-pointer text-gray-400"></i>
+        </div>
+        <button onclick="changePass()" class="w-full bg-red-600 p-4 rounded-2xl font-bold active:scale-95">Changer</button>
+      </div>
+    </div>
+
+  </main>
+
+  <nav class="fixed bottom-0 left-0 right-0 glass border-t border-gray-800 flex justify-around py-2">
+    <button onclick="showAdmin('users')" id="nav-users" class="flex flex-col items-center gap-1 text-red-500 p-2">
+      <i data-lucide="users" class="w-6 h-6"></i>
+      <span class="text-xs">Users</span>
+    </button>
+    <button onclick="showAdmin('exchanges')" id="nav-exchanges" class="flex flex-col items-center gap-1 text-gray-500 p-2">
+      <i data-lucide="repeat" class="w-6 h-6"></i>
+      <span class="text-xs">Échanges</span>
+    </button>
+    <button onclick="showAdmin('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-gray-500 p-2">
+      <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+      <span class="text-xs">Blog</span>
+    </button>
+    <button onclick="showAdmin('settings')" id="nav-settings" class="flex flex-col items-center gap-1 text-gray-500 p-2">
+      <i data-lucide="settings" class="w-6 h-6"></i>
+      <span class="text-xs">Paramètres</span>
+    </button>
+  </nav>
+
+</div>
+
+<script>
+lucide.createIcons();
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function togglePassword(inputId, iconId) {
+  const pass = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if(pass.type === 'password'){
+    pass.type = 'text';
+    icon.setAttribute('data-lucide', 'eye-off');
+  } else {
+    pass.type = 'password';
+    icon.setAttribute('data-lucide', 'eye');
+  }
+  lucide.createIcons();
+}
+
+document.getElementById('toggleAdminPass').onclick = () => togglePassword('adminPass', 'toggleAdminPass');
+document.getElementById('toggleNewPass').onclick = () => togglePassword('newPass', 'toggleNewPass');
+
+async function api(url, method='GET', body=null) {
+  const res = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body: body?JSON.stringify(body):null});
+  return res.json();
+}
+
+async function adminLogin() {
+  const pass = document.getElementById('adminPass').value;
+  if(!pass) return alert('Entre le mot de passe');
+  const res = await api('/api/admin/login', 'POST', {password:pass});
+  if(res.success) {
+    document.getElementById('adminLogin').classList.add('hidden');
+    document.getElementById('adminPanel').classList.remove('hidden');
+    loadUsers();
+    loadExchanges();
+  } else alert('Mot de passe incorrect');
+}
+
+function logout() {
+  document.cookie = "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  location.reload();
+}
+
+async function loadUsers() {
+  const users = await api('/api/admin/users');
+  document.getElementById('usersList').innerHTML = users.map(u => {
+    let badgeClass = 'badge-pending';
+    if(u.status === 'confirmed') badgeClass = 'badge-confirmed';
+    if(u.status === 'blocked') badgeClass = 'badge-blocked';
+
+    return `
+    <div class="glass p-4 rounded-3xl">
+      <div class="flex justify-between items-start mb-3">
+        <div class="flex-1">
+          <p class="font-bold text-lg break-all">${u.email}</p>
+          <p class="text-sm text-gray-400">ID: ${u.id}</p>
+          <p class="text-sm mt-2">💎 ${u.tokens} jetons | 🟡 ${u.gold} or</p>
+          <span class="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold ${badgeClass}">
+            ${u.status}
+          </span>
+        </div>
+      </div>
+
+      ${u.status === 'pending'? `
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <button onclick="confirmUser(${u.id}, 'confirmed')" class="bg-green-600 p-3 rounded-2xl font-bold active:scale-95">
+          Confirmer
+        </button>
+        <button onclick="confirmUser(${u.id}, 'blocked')" class="bg-red-600 p-3 rounded-2xl font-bold active:scale-95">
+          Bloquer
+        </button>
+      </div>
+      ` : ''}
+
+      <div class="grid grid-cols-2 gap-2">
+        <input id="t${u.id}" type="number" inputmode="numeric" placeholder="Tokens" class="p-3 bg-gray-900 rounded-2xl border-gray-700">
+        <input id="g${u.id}" type="number" inputmode="numeric" placeholder="Or" class="p-3 bg-gray-900 rounded-2xl border-gray-700">
+      </div>
+      <button onclick="addTokens(${u.id})" class="w-full mt-3 bg-blue-600 p-3 rounded-2xl font-bold active:scale-95">
+        Donner jetons/or
+      </button>
+    </div>`
+  }).join('');
+}
+
+async function loadExchanges() {
+  const exchanges = await api('/api/admin/exchanges');
+  document.getElementById('exchangesList').innerHTML = exchanges.filter(e => e.type!== 'daily' && e.type!== 'token_to_gold').map(e => {
+    let color = 'bg-yellow-600';
+    let icon = 'clock';
+    if(e.status === 'accepted') { color = 'bg-green-600'; icon = 'check-circle'; }
+    if(e.status === 'rejected') { color = 'bg-red-600'; icon = 'x-circle'; }
+
+    return `
+    <div class="glass p-4 rounded-3xl">
+      <div class="flex justify-between items-start mb-3">
+        <div class="flex-1">
+          <p class="font-bold flex items-center gap-2">
+            <i data-lucide="${icon}" class="w-5 h-5"></i>
+            ${e.type.toUpperCase()}
+          </p>
+          <p class="text-sm text-gray-400">${new Date(e.created_at).toLocaleDateString('fr-FR')} ${new Date(e.created_at).toLocaleTimeString('fr-FR')}</p>
+          <p class="text-sm mt-2">Email: <span class="text-blue-400">${e.email}</span></p>
+          <p class="text-sm">UID: <span class="text-yellow-400">${e.uid}</span></p>
+          <p class="text-sm">Pseudo: <span class="text-yellow-400">${e.pseudo}</span></p>
+          <p class="text-sm">Montant: ${e.amount} or</p>
+          <span class="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold ${color}">${e.status}</span>
+        </div>
+      </div>
+
+      ${e.status === 'pending'? `
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="updateExchange(${e.id}, 'accepted')" class="bg-green-600 p-3 rounded-2xl font-bold active:scale-95">
+          Accepter
+        </button>
+        <button onclick="updateExchange(${e.id}, 'rejected')" class="bg-red-600 p-3 rounded-2xl font-bold active:scale-95">
+          Rejeter
+        </button>
+      </div>
+      ` : ''}
+    </div>`
+  }).join('');
+
+  lucide.createIcons();
+}
+
+async function confirmUser(id, status) {
+  await api('/api/admin/confirm-user', 'POST', {userId: id, status: status});
+  showToast('Statut mis à jour');
+  loadUsers();
+}
+
+async function updateExchange(id, status) {
+  await api('/api/admin/update-exchange', 'POST', {exchangeId: id, status: status});
+  showToast('Échange mis à jour');
+  loadExchanges();
+}
+
+async function addTokens(id) {
+  const tokens = document.getElementById('t'+id).value || 0;
+  const gold = document.getElementById('g'+id).value || 0;
+  if(tokens==0 && gold==0) return;
+  await api('/api/admin/add-tokens', 'POST', {userId:id, tokens:+tokens, gold:+gold});
+  document.getElementById('t'+id).value = '';
+  document.getElementById('g'+id).value = '';
+  showToast('Jetons/or ajoutés');
+  loadUsers();
+}
+
+async function addBlog() {
+  const title = document.getElementById('blogTitle').value;
+  const description = document.getElementById('blogDesc').value;
+  const url = document.getElementById('blogUrl').value;
+  if(!title ||!description) return alert('Titre et description requis');
+  const res = await api('/api/admin/add-blog', 'POST', {title, description, url});
+  if(res.success){
+    showToast('Blog publié');
+    document.getElementById('blogTitle').value = '';
+    document.getElementById('blogDesc').value = '';
+    document.getElementById('blogUrl').value = '';
+  }
+}
+
+async function saveSettings() {
+  await api('/api/admin/settings', 'POST', {
+    site_logo: document.getElementById('siteLogo').value,
+    ff_logo: document.getElementById('ffLogo').value,
+    pubg_logo: document.getElementById('pubgLogo').value,
+    subscribe_link: document.getElementById('subLink').value
+  });
+  showToast('Paramètres sauvegardés');
+}
+
+async function changePass() {
+  const pass = document.getElementById('newPass').value;
+  if(!pass) return alert('Entre un mot de passe');
+  await api('/api/admin/change-password', 'POST', {password: pass});
+  showToast('Mot de passe changé');
+  document.getElementById('newPass').value = '';
+}
+
+function exportPDF() {
+  window.open('/api/admin/export-pdf', '_blank');
+}
+
+function showAdmin(tab) {
+  document.querySelectorAll('.adminTab').forEach(t => t.classList.add('hidden'));
+  document.getElementById(tab).classList.remove('hidden');
+
+  document.querySelectorAll('nav button').forEach(b => {
+    b.classList.remove('text-red-500');
+    b.classList.add('text-gray-500');
+  });
+  document.getElementById('nav-'+tab).classList.remove('text-gray-500');
+  document.getElementById('nav-'+tab).classList.add('text-red-500');
+}
+</script>
+</body>
+</html>

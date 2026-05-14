@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Token Send</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body {
+  font-family: 'Inter', sans-serif;
+  background: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.15), transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(239,68,68,0.15), transparent 50%),
+              #0a0a0f;
+  color: white;
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+}
+.glass {
+  background: rgba(15,15,25,0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(59,130,246,0.2);
+}
+.btn-gradient {
+  background: linear-gradient(135deg, #3b82f6, #ef4444);
+}
+.btn-gradient:active { transform: scale(0.97); }
+input { font-size: 16px; }
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  padding: 14px 24px;
+  border-radius: 16px;
+  font-weight: 600;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 50;
+  max-width: 90%;
+  text-align: center;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast.success { background: #22c55e; }
+.toast.error { background: #ef4444; }
+.toast.info { background: #3b82f6; }
+</style>
+</head>
+<body class="flex flex-col pb-20">
+
+<div id="toast" class="toast"></div>
+
+<div id="loginPage" class="flex-1 flex items-center justify-center p-4">
+  <div class="glass p-8 rounded-3xl w-full max-w-md">
+    <h1 class="text-4xl text-center mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-red-500">TOKEN SEND</h1>
+    <p class="text-center text-gray-400 mb-6">Entre ton email et mot de passe</p>
+
+    <input id="email" placeholder="Email" type="email" class="w-full mb-3 p-4 rounded-2xl bg-gray-900/70 border-gray-700 outline-none focus:border-blue-500">
+
+    <div class="relative mb-4">
+      <input id="password" placeholder="Mot de passe" type="password" class="w-full p-4 rounded-2xl bg-gray-900/70 border-gray-700 outline-none focus:border-blue-500 pr-12">
+      <i data-lucide="eye" id="togglePass" class="absolute right-3 top-4 cursor-pointer text-gray-400"></i>
+    </div>
+
+    <button onclick="login()" class="w-full btn-gradient p-4 rounded-2xl font-bold text-lg">Se connecter</button>
+
+    <p class="text-center text-gray-400 text-xs mt-4">
+      Pas besoin de créer un compte.<br>
+      L'admin doit confirmer avant que tu puisses te connecter.
+    </p>
+  </div>
+</div>
+
+<div id="homePage" class="hidden flex-1">
+
+  <header class="sticky top-0 z-10 p-4 border-b border-gray-800/50 bg-black/80 backdrop-blur-md">
+    <div class="flex justify-between items-center mb-3">
+      <div id="siteLogo" class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-red-500">TOKEN SEND</div>
+      <button onclick="logout()" class="text-gray-400 active:text-red-400">
+        <i data-lucide="log-out" class="w-6 h-6"></i>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="glass p-4 rounded-2xl flex items-center gap-3">
+        <div class="bg-blue-500/20 p-2 rounded-xl">
+          <i data-lucide="coins" class="w-6 h-6 text-blue-400"></i>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400">Jetons</p>
+          <p class="text-2xl font-bold" id="tokens">0</p>
+        </div>
+      </div>
+      <div class="glass p-4 rounded-2xl flex items-center gap-3">
+        <div class="bg-yellow-500/20 p-2 rounded-xl">
+          <i data-lucide="gem" class="w-6 h-6 text-yellow-400"></i>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400">Or</p>
+          <p class="text-2xl font-bold" id="gold">0</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="p-4 max-w-4xl mx-auto">
+    <h3 class="text-2xl mb-4 flex items-center gap-2"><i data-lucide="newspaper" class="text-red-400"></i> Blogs</h3>
+    <div id="blogs" class="grid md:grid-cols-2 gap-4"></div>
+  </section>
+
+  <nav class="fixed bottom-0 left-0 right-0 glass border-t border-gray-800/50 flex justify-around p-2">
+    <button onclick="showTab('defi')" id="nav-defi" class="flex flex-col items-center text-blue-400 p-2">
+      <i data-lucide="trophy" class="w-6 h-6"></i>
+      <span class="text-xs mt-1">Défi</span>
+    </button>
+    <button onclick="showTab('echange')" id="nav-echange" class="flex flex-col items-center text-gray-500 p-2">
+      <i data-lucide="repeat" class="w-6 h-6"></i>
+      <span class="text-xs mt-1">Échange</span>
+    </button>
+    <button onclick="showTab('history')" id="nav-history" class="flex flex-col items-center text-gray-500 p-2">
+      <i data-lucide="history" class="w-6 h-6"></i>
+      <span class="text-xs mt-1">Historique</span>
+    </button>
+    <button onclick="showTab('profile')" id="nav-profile" class="flex flex-col items-center text-gray-500 p-2">
+      <i data-lucide="user" class="w-6 h-6"></i>
+      <span class="text-xs mt-1">Moi</span>
+    </button>
+  </nav>
+
+  <!-- Tab Défi -->
+  <div id="defi" class="tab p-4 max-w-2xl mx-auto">
+    <div class="glass p-5 rounded-3xl mb-4">
+      <h4 class="text-xl mb-2 flex items-center gap-2"><i data-lucide="calendar-check" class="text-blue-400"></i> Défi Quotidien</h4>
+      <p class="text-gray-400 mb-4">Réclame 2 jetons chaque jour</p>
+      <button id="claimBtn" onclick="claimDaily()" class="w-full btn-gradient p-4 rounded-2xl font-bold">Réclamer 2 jetons</button>
+    </div>
+
+    <div class="glass p-5 rounded-3xl">
+      <h4 class="text-xl mb-4 flex items-center gap-2"><i data-lucide="activity" class="text-purple-400"></i> Ton statut</h4>
+      <div class="space-y-3">
+        <div class="flex justify-between items-center p-3 bg-gray-900/50 rounded-xl">
+          <span class="text-gray-400">Jetons disponibles</span>
+          <span class="font-bold text-blue-400 text-xl" id="tokens2">0</span>
+        </div>
+        <div class="flex justify-between items-center p-3 bg-gray-900/50 rounded-xl">
+          <span class="text-gray-400">Or disponible</span>
+          <span class="font-bold text-yellow-400 text-xl" id="gold2">0</span>
+        </div>
+        <p class="text-xs text-gray-500 text-center mt-3">20 jetons = 1 Or</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Échange -->
+  <div id="echange" class="tab p-4 max-w-2xl mx-auto hidden">
+    <div class="glass p-5 rounded-3xl mb-4 text-center">
+      <h4 class="text-lg font-bold mb-2">Convertir Jetons → Or</h4>
+      <p class="text-gray-400 mb-3">20 jetons = 1 Or</p>
+      <button onclick="exchangeTokens()" class="w-full bg-yellow-500 text-black p-4 rounded-2xl font-bold active:scale-95">Échanger maintenant</button>
+    </div>
+
+    <div class="glass p-5 rounded-3xl mb-4">
+      <img id="ffLogo" class="w-16 h-16 object-contain mb-3 mx-auto rounded-2xl">
+      <h4 class="text-lg font-bold mb-3 text-center">Free Fire</h4>
+      <input id="ffUid" placeholder="UID Free Fire" inputmode="numeric" class="w-full mb-3 p-4 bg-gray-900/70 rounded-2xl border-gray-700">
+      <input id="ffPseudo" placeholder="Pseudo" class="w-full mb-4 p-4 bg-gray-900/70 rounded-2xl border-gray-700">
+      <button onclick="exchange('ff')" class="w-full bg-gradient-to-r from-red-600 to-orange-600 p-4 rounded-2xl font-bold active:scale-95">1 Or = 100💎 Free Fire</button>
+    </div>
+
+    <div class="glass p-5 rounded-3xl">
+      <img id="pubgLogo" class="w-16 h-16 object-contain mb-3 mx-auto rounded-2xl">
+      <h4 class="text-lg font-bold mb-3 text-center">PUBG Mobile</h4>
+      <input id="pubgUid" placeholder="UID PUBG" inputmode="numeric" class="w-full mb-3 p-4 bg-gray-900/70 rounded-2xl border-gray-700">
+      <input id="pubgPseudo" placeholder="Pseudo" class="w-full mb-4 p-4 bg-gray-900/70 rounded-2xl border-gray-700">
+      <button onclick="exchange('pubg')" class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 p-4 rounded-2xl font-bold active:scale-95">1 Or = 60 UC PUBG</button>
+    </div>
+  </div>
+
+  <!-- Tab Historique -->
+  <div id="history" class="tab p-4 max-w-2xl mx-auto hidden">
+    <h3 class="text-2xl mb-4 flex items-center gap-2"><i data-lucide="history" class="text-gray-400"></i> Historique</h3>
+    <div id="historyList" class="space-y-3"></div>
+  </div>
+
+  <!-- Tab Moi -->
+  <div id="profile" class="tab p-4 max-w-2xl mx-auto hidden">
+    <div class="glass p-6 rounded-3xl">
+      <h3 class="text-2xl mb-4 flex items-center gap-2"><i data-lucide="user-circle" class="text-blue-400"></i> Mon Profil</h3>
+      <div class="space-y-3">
+        <div class="p-4 bg-gray-900/50 rounded-2xl">
+          <p class="text-sm text-gray-400">Email</p>
+          <p class="font-bold text-lg" id="profileEmail">-</p>
+        </div>
+        <div class="p-4 bg-gray-900/50 rounded-2xl">
+          <p class="text-sm text-gray-400">ID Utilisateur</p>
+          <p class="font-bold text-lg" id="profileId">-</p>
+        </div>
+        <div class="p-4 bg-gray-900/50 rounded-2xl">
+          <p class="text-sm text-gray-400">Statut</p>
+          <p class="font-bold text-lg" id="profileStatus">-</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="text-center py-4 text-gray-500 text-sm border-t border-gray-800/50">
+  ©Token-send 2026
+</footer>
+
+<script>
+lucide.createIcons();
+
+function showToast(msg, type='success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = `toast ${type}`;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function togglePassword(inputId, iconId) {
+  const pass = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if(pass.type === 'password'){
+    pass.type = 'text';
+    icon.setAttribute('data-lucide', 'eye-off');
+  } else {
+    pass.type = 'password';
+    icon.setAttribute('data-lucide', 'eye');
+  }
+  lucide.createIcons();
+}
+
+document.getElementById('togglePass').onclick = () => togglePassword('password', 'togglePass');
+
+async function api(url, method='GET', body=null) {
+  const res = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body: body? JSON.stringify(body) : null});
+  return res.json();
+}
+
+async function login() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  if(!email ||!password) return showToast('Remplis tout', 'error');
+
+  const res = await api('/api/login', 'POST', {email,password});
+  if(res.success) {
+    showToast('Connexion réussie', 'success');
+    loadHome();
+  } else {
+    showToast(res.error, 'error');
+  }
+}
+
+async function logout(){
+  document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  location.reload();
+}
+
+async function checkAuth(){
+  try{
+    const user = await api('/api/me');
+    if(user && user.id){
+      document.getElementById('loginPage').classList.add('hidden');
+      document.getElementById('homePage').classList.remove('hidden');
+      loadHome();
+    }
+  }catch(e){}
+}
+
+async function loadHome() {
+  const user = await api('/api/me');
+  document.getElementById('tokens').textContent = user.tokens;
+  document.getElementById('gold').textContent = user.gold;
+  document.getElementById('tokens2').textContent = user.tokens;
+  document.getElementById('gold2').textContent = user.gold;
+  document.getElementById('profileEmail').textContent = user.email;
+  document.getElementById('profileId').textContent = user.id;
+  document.getElementById('profileStatus').textContent = user.status;
+
+  const blogs = await api('/api/blogs');
+  document.getElementById('blogs').innerHTML = blogs.length? blogs.map(b =>
+    `<div class="glass p-5 rounded-3xl">
+      <h4 class="font-bold text-blue-400 text-lg mb-2">${b.title}</h4>
+      <p class="text-sm text-gray-300 mb-3">${b.description}</p>
+      ${b.url? `<a href="${b.url}" target="_blank" class="text-red-400 text-sm font-semibold">Lire plus →</a>` : ''}
+    </div>`
+  ).join('') : '<p class="text-gray-500 text-center py-8">Aucun blog pour le moment</p>';
+
+  const settings = await api('/api/settings');
+  if(settings.site_logo) document.getElementById('siteLogo').innerHTML = `<img src="${settings.site_logo}" class="h-8 inline rounded-lg">`;
+  if(settings.ff_logo) document.getElementById('ffLogo').src = settings.ff_logo;
+  if(settings.pubg_logo) document.getElementById('pubgLogo').src = settings.pubg_logo;
+
+  const history = await api('/api/history');
+  document.getElementById('historyList').innerHTML = history.length? history.map(h => {
+    let color = 'bg-yellow-600';
+    let icon = 'clock';
+    if(h.status === 'accepted') { color = 'bg-green-600'; icon = 'check-circle'; }
+    if(h.status === 'rejected') { color = 'bg-red-600'; icon = 'x-circle'; }
+    
+    return `
+    <div class="glass p-4 rounded-2xl">
+      <div class="flex justify-between items-start mb-2">
+        <div>
+          <p class="font-bold flex items-center gap-2">
+            <i data-lucide="${icon}" class="w-5 h-5"></i>
+            ${h.type.toUpperCase()}
+          </p>
+          <p class="text-sm text-gray-400">${new Date(h.created_at).toLocaleDateString('fr-FR')} ${new Date(h.created_at).toLocaleTimeString('fr-FR')}</p>
+        </div>
+        <span class="px-3 py-1 rounded-full text-xs font-bold ${color}">${h.status}</span>
+      </div>
+      ${h.uid ? `<p class="text-sm text-gray-300">UID: ${h.uid}</p>` : ''}
+      ${h.pseudo ? `<p class="text-sm text-gray-300">Pseudo: ${h.pseudo}</p>` : ''}
+      <p class="text-sm text-gray-400 mt-2">Montant: ${h.amount}</p>
+    </div>`
+  }).join('') : '<p class="text-gray-500 text-center py-8">Aucun historique</p>';
+  
+  lucide.createIcons();
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.add('hidden'));
+  document.getElementById(tab).classList.remove('hidden');
+
+  document.querySelectorAll('nav button').forEach(b => {
+    b.classList.remove('text-blue-400');
+    b.classList.add('text-gray-500');
+  });
+  document.getElementById('nav-'+tab).classList.remove('text-gray-500');
+  document.getElementById('nav-'+tab).classList.add('text-blue-400');
+}
+
+async function claimDaily() {
+  const btn = document.getElementById('claimBtn');
+  btn.disabled = true;
+
+  const res = await api('/api/claim-daily', 'POST');
+
+  if(res.success){
+    showToast('2 jetons ajoutés!', 'success');
+    await loadHome();
+  } else {
+    showToast(res.error, 'error');
+  }
+
+  btn.disabled = false;
+}
+
+async function exchangeTokens() {
+  const res = await api('/api/exchange', 'POST', {type:'tokens'});
+  showToast(res.success? 'Échange en cours...' : res.error, res.success? 'info' : 'error');
+  loadHome();
+}
+
+async function exchange(type) {
+  const uid = document.getElementById(type+'Uid').value;
+  const pseudo = document.getElementById(type+'Pseudo').value;
+  if(!uid ||!pseudo) return showToast('Remplis UID et pseudo', 'error');
+  const res = await api('/api/exchange', 'POST', {type, uid, pseudo});
+  showToast(res.success? 'Demande envoyée' : res.error, res.success? 'success' : 'error');
+  if(res.success){
+    document.getElementById(type+'Uid').value = '';
+    document.getElementById(type+'Pseudo').value = '';
+  }
+  loadHome();
+}
+
+checkAuth();
+</script>
+</body>
+</html>
